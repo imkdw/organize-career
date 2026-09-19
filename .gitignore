@@ -1,5 +1,7 @@
 node_modules/
 data/
+data-clean/
 .env
 _workspace/
 _workspace_prev/
+output

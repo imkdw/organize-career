@@ -24,30 +24,6 @@ async function saveJson(relPath: string, data: unknown): Promise<void> {
   await writeFile(target, JSON.stringify(data, null, 2), "utf-8");
 }
 
-/** Atlassian Document Format(ADF) 트리에서 순수 텍스트만 추출 */
-function adfToText(node: unknown): string {
-  if (node == null) return "";
-  if (typeof node === "string") return node;
-  if (Array.isArray(node)) return node.map(adfToText).join("");
-  if (typeof node === "object") {
-    const n = node as Record<string, unknown>;
-    if (n.type === "text" && typeof n.text === "string") return n.text;
-    if (n.type === "hardBreak") return "\n";
-    const inner = adfToText(n.content ?? "");
-    // 블록 노드는 줄바꿈으로 구분
-    const blockTypes = new Set([
-      "paragraph",
-      "heading",
-      "listItem",
-      "codeBlock",
-      "blockquote",
-      "tableRow",
-    ]);
-    return blockTypes.has(n.type as string) ? inner + "\n" : inner;
-  }
-  return "";
-}
-
 /** Confluence storage XHTML에서 순수 텍스트만 추출 */
 function htmlToText(html: string): string {
   return html
@@ -74,45 +50,9 @@ const cleanText = (s: string): string =>
 type Any = Record<string, any>;
 
 function cleanJiraIssue(issue: Any): Any {
-  const f = issue.fields ?? {};
-  const sprints = Array.isArray(f.customfield_10020)
-    ? f.customfield_10020.map((s: Any) => s?.name).filter(Boolean)
-    : [];
-  const comments = (f.comment?.comments ?? []).map((c: Any) => ({
-    author: c.author?.displayName ?? null,
-    created: c.created ?? null,
-    body: cleanText(adfToText(c.body)),
-  }));
   return {
     key: issue.key,
-    summary: f.summary ?? null,
-    type: f.issuetype?.name ?? null,
-    status: f.status?.name ?? null,
-    resolution: f.resolution?.name ?? null,
-    project: f.project ? { key: f.project.key, name: f.project.name } : null,
-    assignee: f.assignee?.displayName ?? null,
-    reporter: f.reporter?.displayName ?? null,
-    labels: f.labels ?? [],
-    components: (f.components ?? []).map((c: Any) => c.name).filter(Boolean),
-    fixVersions: (f.fixVersions ?? []).map((v: Any) => v.name).filter(Boolean),
-    sprints,
-    parent: f.parent?.key ?? null,
-    subtasks: (f.subtasks ?? []).map((s: Any) => s.key).filter(Boolean),
-    issuelinks: (f.issuelinks ?? [])
-      .map((l: Any) => {
-        const other = l.outwardIssue ?? l.inwardIssue;
-        if (!other) return null;
-        const relation = l.outwardIssue ? l.type?.outward : l.type?.inward;
-        return { relation: relation ?? l.type?.name ?? null, key: other.key };
-      })
-      .filter(Boolean),
-    created: f.created ?? null,
-    updated: f.updated ?? null,
-    duedate: f.duedate ?? null,
-    resolutiondate: f.resolutiondate ?? null,
-    description: f.description ? cleanText(adfToText(f.description)) : null,
-    comments,
-    attachmentCount: (f.attachment ?? []).length,
+    summary: issue.fields?.summary ?? null,
   };
 }
 

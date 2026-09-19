@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "collect": "node --env-file-if-exists=.env --import tsx src/index.ts",
+    "clean": "node --import tsx src/clean.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
