@@ -1,0 +1,5 @@
+node_modules/
+data/
+.env
+_workspace/
+_workspace_prev/
